@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 from typing import List
 from datetime import datetime, timedelta, timezone
 
@@ -34,6 +35,20 @@ def get_cards(set_id: int, user_id: int = Depends(get_current_user_id), db: Sess
     cards = db.query(database_models.Card).join(database_models.Card_set).join(database_models.Section).filter(database_models.Card.card_set_id == set_id, database_models.Section.user_id == user_id).all()
     return cards
 
+@router.get("/cards/mix", response_model=List[CardResponse])
+def get_mix_cards(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db), limit: int = 10):
+
+    now = datetime.now(timezone.utc)
+
+    mixed_cards =   (
+                        db.query(database_models.Card).join(database_models.Card_set).join(database_models.Section)
+                        .filter(database_models.Section.user_id == user_id, database_models.Card.next_review_at <= now)
+                        .order_by(func.random())
+                        .limit(limit)
+                        .all()
+                    )
+    return mixed_cards
+
 @router.delete("/cards/{card_id}")
 def delete_card(card_id: int, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     found_card = db.query(database_models.Card).join(database_models.Card_set).join(database_models.Section).filter(database_models.Card.id == card_id, database_models.Section.user_id == user_id).first()
@@ -51,8 +66,8 @@ def card_update(card_id: int, card_data: CardUpdate, user_id: int = Depends(get_
         raise HTTPException(status_code=404, detail="Card not found!")
     update_data = card_data.model_dump(exclude_unset=True)
 
-    print(f"📥 Пришло от клиента: {card_data}")
-    print(f"📦 Словарь для обновления: {update_data}")
+    print(f"Data received from client: {card_data}")
+    print(f"Dict for updating: {update_data}")
 
     for key, value in update_data.items():
         setattr(found_card, key, value)
