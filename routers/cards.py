@@ -109,7 +109,7 @@ def review_card(card_id: int, review: CardReview, user_id: int = Depends(get_cur
 
     return found_card
 
-@router.get("/cards/due", response_model=CardResponse)
+@router.get("/cards/due", response_model=List[CardResponse])
 def get_due_cards(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
     now = datetime.now(timezone.utc)
 
