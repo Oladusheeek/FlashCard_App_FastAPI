@@ -8,11 +8,29 @@ from database import SessionLocal, engine, get_db
 import database_models 
 from models import (
 
-    CardCreate, CardResponse, CardUpdate, CardReview
+    CardCreate, CardResponse, CardUpdate, CardReview, CardReviewBatchItem
 )
 from security import get_current_user_id
 
 router = APIRouter(tags=["Cards"])
+
+def review_card_logic_SRS(quality: int, found_card):
+
+    if quality < 2:
+        found_card.repetitions = 0
+        found_card.interval = 1
+    else:
+        new_easiness_factor = found_card.easiness_factor + (0.1 - (3 - quality) * (0.08 + (3 - quality) * 0.02))
+        found_card.easiness_factor = max(1.3, new_easiness_factor)
+
+        found_card.repetitions +=1
+        if found_card.repetitions == 1:
+            found_card.interval = 1
+        elif found_card.repetitions == 2:
+            found_card.interval = 6
+        else:
+            found_card.interval = found_card.interval * found_card.easiness_factor
+    found_card.next_review_at = datetime.now(timezone.utc) + timedelta(days=found_card.interval)
 
 @router.post("/card_sets/{set_id}/cards", response_model=CardResponse)
 def create_card(set_id: int, card: CardCreate, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
@@ -85,29 +103,41 @@ def review_card(card_id: int, review: CardReview, user_id: int = Depends(get_cur
                 )
     if not found_card:
         raise HTTPException(status_code=404, detail="Card not found")
-    
-    q = review.quality
-
-    if q < 2:
-        found_card.repetitions = 0
-        found_card.interval = 1
-    else:
-        new_easiness_factor = found_card.easiness_factor + (0.1 - (3 - q) * (0.08 + (3 - q) * 0.02))
-        found_card.easiness_factor = max(1.3, new_easiness_factor)
-
-        found_card.repetitions +=1
-        if found_card.repetitions == 1:
-            found_card.interval = 1
-        elif found_card.repetitions == 2:
-            found_card.interval = 6
-        else:
-            found_card.interval = found_card.interval * found_card.easiness_factor
-    found_card.next_review_at = datetime.now(timezone.utc) + timedelta(days=found_card.interval)
-
+    quality = review.quality
+    review_card_logic_SRS(quality, found_card)
     db.commit()
     db.refresh(found_card)
 
     return found_card
+
+@router.post("/cards/mix/review", response_model=List[CardResponse])
+def review_batch(reviews: List[CardReviewBatchItem], user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    card_ids = [r.card_id for r in reviews]
+    found_cards =   (
+                        db.query(database_models.Card)
+                        .join(database_models.Card_set)
+                        .join(database_models.Section)
+                        .filter(
+                                database_models.Card.id.in_(card_ids),
+                                database_models.Section.user_id == user_id
+                            )
+                        .all()
+                    )
+    
+    cards_map = {card.id: card for card in found_cards}
+
+    for review in reviews:
+        card = cards_map.get(review.card_id)
+        if not card:
+            continue
+        review_card_logic_SRS(review.quality, card)
+    db.commit()
+    
+    updated_cards = list(cards_map.values())
+    for card in updated_cards:
+        db.refresh(card)
+
+    return updated_cards
 
 @router.get("/cards/due", response_model=List[CardResponse])
 def get_due_cards(user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)):
