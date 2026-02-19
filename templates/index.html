@@ -1,0 +1,31 @@
+<!Doctype html>
+<html>
+    <head>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    </head>
+    <body>
+        <div id="app">
+            <h1>{{title}}</h1>
+            <div v-if="!token">
+                <form @submit.prevent="login">
+                    <div>
+                        <label>Login:</label>
+                        <input type="text" v-model="username" required>
+                    </div>
+                    <div>
+                        <label>Password:</label>
+                        <input type="password" v-model="password" required>
+                    </div>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <div v-else>
+                <h2>My sections</h2>
+                <div v-for="section in sections" :key="section.id">
+                    <h3>{{section.title}}</h3>
+                </div>
+            </div>
+        </div>
+        <script src="../scripts/app.js"></script>
+    </body>
+</html>
