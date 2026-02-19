@@ -92,7 +92,7 @@ class CardStatusUpdate(BaseModel):
 class CardReview(BaseModel):
     quality: int
 
-class CardReviewBatchItem(BaseModel);
+class CardReviewBatchItem(BaseModel):
     card_id: int
     quality: int
 # ====================================
