@@ -21,8 +21,36 @@
             </div>
             <div v-else>
                 <h2>My sections</h2>
-                <div v-for="section in sections" :key="section.id">
-                    <h3>{{section.title}}</h3>
+                <button v-if="!showCreateSectionForm" @click="showCreateSectionForm = !showCreateSectionForm">Create New Section</button>
+                <button @click="logout">Logout</button>
+                <div v-if="showCreateSectionForm">
+                    <form @submit.prevent="create_section">
+                        <input type="text" v-model="newSectionTitle" required>
+                        <button type="submit">Create Section</button>
+                        <button type="button" @click="showCreateSectionForm = false; newSectionTitle = ''">Cancel</button>
+                    </form>
+                </div>
+
+                <div v-for="section in sections" :key="section.id"> <!--Sections div-->
+                    <div v-if="editingSectionId !== section.id">
+                        <h3>{{ section.title }}</h3>
+                        <button @click="expandSection(section.id)">Open</button>
+                        <button @click="startEdit(section)">Edit</button>
+                        <button 
+                            @click="request_delete(section.id)" 
+                            :disabled="deletingSectionId === section.id && !deleteReady">
+                            {{ deletingSectionId === section.id ? 'Confirm delete' : 'Delete' }}
+                        </button>
+                    </div>
+
+                    <div v-else>
+                        <form @submit.prevent="saveEdit(section.id)">
+                                <input type="text" v-model="editSectionTitle" required>
+                                <button type="submit">Save</button>
+                                <button type="button" @click="editingSectionId = null">Cancel</button>
+                        </form>
+                    </div>
+
                 </div>
             </div>
         </div>
