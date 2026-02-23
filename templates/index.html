@@ -35,17 +35,17 @@
                     <div v-if="editingSectionId !== section.id">
                         <h3>{{ section.title }}</h3>
                         <button @click="expandSection(section.id)">Open</button>
-                        <button @click="startEdit(section)">Edit</button>
+                        <button @click="start_edit_section(section)">Edit</button>
                         <button 
-                            @click="request_delete(section.id)" 
+                            @click="request_delete_section(section.id)" 
                             :disabled="deletingSectionId === section.id && !deleteReady">
                             {{ deletingSectionId === section.id ? 'Confirm delete' : 'Delete' }}
                         </button>
                     </div>
 
                     <div v-else>
-                        <form @submit.prevent="saveEdit(section.id)">
-                                <input type="text" v-model="editSectionTitle" required>
+                        <form @submit.prevent="edit_section(section.id)">
+                                <input type="text" v-model="editingSectionTitle" required>
                                 <button type="submit">Save</button>
                                 <button type="button" @click="editingSectionId = null">Cancel</button>
                         </form>

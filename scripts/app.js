@@ -110,12 +110,44 @@ createApp({
         open_section(id) {
             pass;
         },
-        // Edit section
-        startEdit(section) {
-            pass;
+        start_edit_section(section){
+            this.editingSectionId = section.id;
+            this.editingSectionTitle = section.title
         },
-        async delete_section(id){
-            const response = await fetch (`http://localhost:8000/sections/${id}`, {
+        // Edit section
+        async edit_section(section_id){
+            try{
+                const response = await fetch(`http://localhost:8000/sections/${section_id}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({title : this.editingSectionTitle})
+                })
+
+                if(response.ok){
+                    const UpdatedSection = await response.json()
+                    const SectionToUpdate = this.sections.find(s => s.id === section_id)
+                    if (SectionToUpdate){
+                        SectionToUpdate.title = UpdatedSection.title
+                    }
+                    this.error = null
+                    this.editingSectionId = null
+                    this.editingSectionTitle = ''
+                } else {
+                    this.error = 'Cannot edit sections data!'
+                    if(response.status === 401){
+                        this.token = null;
+                    }
+                }
+            }
+            catch (err){
+                this.error = 'Cannot connect to the server. Ensure connectivity'
+            }
+        },
+        async delete_section(section_id){
+            const response = await fetch (`http://localhost:8000/sections/${section_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${this.token}`,
@@ -124,31 +156,31 @@ createApp({
             });
 
             if(response.ok){
-                this.sections = this.sections.filter(s => s.id !== id) //filtering deleted section
+                this.sections = this.sections.filter(s => s.id !== section_id) //filtering deleted section
             }
         },
-        request_delete(id){
-            if(this.deletingSectionId !== id){
-                this.deletingSectionId = id;
+        request_delete_section(section_id){
+            if(this.deletingSectionId !== section_id){ //check if current 'id' equals saved 'delete id'
+                this.deletingSectionId = section_id;
                 this.deleteReady = false;
 
-                setTimeout(() => {
-                    if(this.deletingSectionId === id){
+                setTimeout(() => { // pull off safety check after 0.5s
+                    if(this.deletingSectionId === section_id){
                         this.deleteReady = true;
                     }
                 }, 500);
 
-                setTimeout(() => {
-                    if(this.deletingSectionId === id){
+                setTimeout(() => { // raise safety check after 3s
+                    if(this.deletingSectionId === section_id){
                         this.deletingSectionId = null;
                         this.deleteReady = false;
                     }
-                }, 2000);
-            } else if(this.deletingSectionId === id && this.deleteReady){
-                this.delete_section(id);
-                this.deletingSectionId = null;
-                this.deleteReady = false;
+                }, 3000);
+            } else if(this.deletingSectionId === section_id && this.deleteReady){ // on second click on this exact button 
+                this.delete_section(section_id);                                  // call delete func
+                this.deletingSectionId = null;  //clear temp values
+                this.deleteReady = false;       //
             }
-        }
+        },
     }
 }).mount('#app');
