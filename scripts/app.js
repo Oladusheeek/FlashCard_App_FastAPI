@@ -18,6 +18,9 @@ createApp({
 
             deletingSectionId: null, // delete section
             deleteReady: false,
+
+            expandedSectionId: null, // expand section to see card sets
+            sectionCardSets: []
         }
     },
     mounted() {
@@ -107,8 +110,31 @@ createApp({
             }
         },
         //Temp func for opening
-        open_section(id) {
-            pass;
+        async expand_section(section_id) {
+            if (this.expandedSectionId === section_id){
+                this.expandedSectionId = null;
+                this.sectionCardSets = [];
+                return
+            } 
+            try{
+                const response = await fetch(`http://localhost:8000/sections/${section_id}/card_sets`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if(response.ok){
+                    this.sectionCardSets = await response.json()
+                    this.expandedSectionId = section_id
+                } else{
+                    console.error(`Failed to fetch card set from section ID:${section_id}`)
+                }
+            }
+            catch (err) {
+                this.error = 'Cannot connect to the server. Ensure connectivity'
+            }
         },
         start_edit_section(section){
             this.editingSectionId = section.id;
@@ -182,5 +208,20 @@ createApp({
                 this.deleteReady = false;       //
             }
         },
+                
+        async fetch_card_sets(section_id){
+            try{
+                const response = await fetch(`http://localhost:8000/sections/${section_id}/card_sets`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${this.token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+            catch (err) {
+                this.error = 'Cannot connect to the server. Ensure connectivity'
+            }
+        }
     }
 }).mount('#app');

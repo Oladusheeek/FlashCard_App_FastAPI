@@ -34,7 +34,6 @@
                 <div v-for="section in sections" :key="section.id"> <!--Sections div-->
                     <div v-if="editingSectionId !== section.id">
                         <h3>{{ section.title }}</h3>
-                        <button @click="expandSection(section.id)">Open</button>
                         <button @click="start_edit_section(section)">Edit</button>
                         <button 
                             @click="request_delete_section(section.id)" 
@@ -50,7 +49,21 @@
                                 <button type="button" @click="editingSectionId = null">Cancel</button>
                         </form>
                     </div>
-
+                        <button @click="expand_section(section.id)">{{ expandedSectionId === section.id ? 'Close' : 'Open'}}</button>
+                        <div v-if="expandedSectionId === section.id">
+                            <h4>Колоды:</h4>
+        
+                            <p v-if="sectionCardSets.length === 0">Здесь пока нет колод.</p>
+                            
+                            <ul v-else>
+                                <li v-for="cardSet in sectionCardSets" :key="cardSet.id" style="margin-bottom: 10px;">
+                                    <strong>{{ cardSet.title }}</strong> 
+                                    <button @click="openCardSetPage(section, cardSet)">Учить слова</button>
+                                </li>
+                            </ul>
+        
+                            <button>+ Добавить колоду</button>
+                        </div>
                 </div>
             </div>
         </div>
